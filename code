@@ -1,0 +1,171 @@
+import torch
+import cv2
+import math
+from multiprocessing import Process
+import time
+import pygame
+
+
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
+model = torch.hub.load('C:\\Users\\wise3\\PycharmProjects\\pythonProject3\\master\\yolov5', 'custom',
+                       path='C:\\Users\\wise3\\PycharmProjects\\pythonProject3\\master\\yolov5\\0920best.pt',
+                       source='local')
+img = 'C:\\Users\\wise3\\PycharmProjects\\pythonProject3\\master\\yolov5\\capture\\capture.jpg'
+key = cv2.waitKey(1) & 0xFF
+
+pygame.mixer.init()
+sound1 = pygame.mixer.Sound("C:/Users/wise3/PycharmProjects/pythonProject3/master/yolov5/high.wav")
+sound2 = pygame.mixer.Sound("C:/Users/wise3/PycharmProjects/pythonProject3/master/yolov5/low.wav")
+sound3 = pygame.mixer.Sound("C:/Users/wise3/PycharmProjects/pythonProject3/master/yolov5/middle.wav")
+
+
+#list_b = list()
+
+def capture():
+    while cap.isOpened():
+        success, frame = cap.read()
+        if success:
+            cv2.imshow('Camera Window', frame)
+            key = cv2.waitKey(1) & 0xFF
+
+            if key == ord('s'):  # 's' key
+                cv2.imwrite('C:\\Users\\wise3\\PycharmProjects\\pythonProject3\\master\\yolov5\\capture\\capture.jpg',
+                            frame)
+                cv2.destroyAllWindows()
+
+            elif key == ord('a'):
+                results = model(img)
+                check = results.pandas().xyxy[0].empty
+                lst = results.pandas().xyxy[0]
+                print("empty is:", check)
+                if check == False:
+                    length_index = len(lst.index)
+                    # print("length index is", length_index)
+                    list_a = [lst.index.tolist()]
+                    length_of_index = len(lst.index.tolist())
+                    print("len(list_a) is", length_of_index)
+                    list_b = list()
+
+                    if length_of_index == 1:
+                        list_b.append(contains(lst.index.tolist()[0]))
+
+                    elif length_of_index == 2:
+                        list_b.append(contains(lst.index.tolist()[0]))
+                        list_b.append(contains(lst.index.tolist()[1]))
+
+                    elif length_of_index == 3:
+                        list_b.append(contains(lst.index.tolist()[0]))
+                        list_b.append(contains(lst.index.tolist()[1]))
+                        list_b.append(contains(lst.index.tolist()[2]))
+
+                    else:
+                        print("too many things found")
+
+                    print("이건 중간 list_b에서 나오는 문장", list_b)
+
+                    return list_b
+
+                elif check == True:
+                    print("nothing found")
+
+            elif key == 27:
+                cv2.destroyAllWindows()
+                break
+
+
+def contains(turns):
+    results = model(img)
+    lst = results.pandas().xyxy[0]
+    c1_xmin, c1_xmax = lst.iloc[turns, 0], lst.iloc[turns, 2]
+    c1_ymin, c1_ymax = lst.iloc[turns, 1], lst.iloc[turns, 3]
+    x_point = math.floor((c1_xmax - c1_xmin) + c1_xmin)
+    y_point = math.floor((c1_ymax - c1_ymin) + c1_ymin)
+    # print("contains:",lst.iloc[turns, 6], x_point, y_point)
+    return lst.iloc[turns, 6], x_point, y_point
+
+
+def sample1(name1, point_x1, point_y1):
+    time.sleep(1)
+    new_x = round((point_x1 / 15) / 4 , 2)
+    time.sleep(new_x)
+    #sound1.play()
+    #time.sleep(10)
+    #print("이건 1샘플에서 나오는 문장입니다. 그리고 값은 \n", name1, new_x, point_y1)
+    #print("완전히 끝")
+    if name1 == 'yellow_circle':
+        sound1.play()
+    elif name1 == 'Blue-Block':
+        sound2.play()
+    else:
+        sound3.play()
+    time.sleep(20)
+
+def sample2(name1, point_x1, point_y1):
+    new_x = round((point_x1 / 15) / 4, 2)
+    time.sleep(new_x)
+    #sound2.play()
+    #time.sleep(10)
+    #print("이건 2샘플에서 나오는 문장입니다. 그리고 값은 \n", name1, new_x, point_y1)
+    #print("완전히 끝")
+    if name1 == 'yellow_circle':
+        sound1.play()
+    elif name1 == 'Blue-Block':
+        sound2.play()
+    else:
+        sound3.play()
+    time.sleep(20)
+
+def sample3(name1, point_x1, point_y1):
+    new_x = round((point_x1 / 15) / 4, 2)
+    time.sleep(new_x)
+    #sound3.play()
+    #time.sleep(10)
+    #print("이건 3샘플에서 나오는 문장입니다.그리고 값은 \n", name1, point_x1, point_y1)
+    #print("완전히 끝")
+    if name1 == 'yellow_circle':
+        sound1.play()
+    elif name1 == 'Blue-Block':
+        sound2.play()
+    else:
+        sound3.play()
+    time.sleep(20)
+
+
+def judge(name, point_x, point_y):
+    for i in 3:
+        print("judge is:\n", name, point_x, point_y)
+
+
+#while True:
+if __name__ == '__main__':
+    while True:
+        real_list = list
+        real_list = capture()
+        #print("함수 탈출 그리고 return은", capture())
+        if len(real_list) == 1:
+            sample1(real_list[0][0], real_list[0][1], real_list[0][2])
+
+        elif len(real_list) == 2:
+            sample1_ps = Process(target=sample1, args=(real_list[0][0], real_list[0][1], real_list[0][2]))
+            sample2_ps = Process(target=sample2, args=(real_list[1][0], real_list[1][1], real_list[1][2]))
+            sample1_ps.start()
+            sample2_ps.start()
+            sample1_ps.join()
+            sample2_ps.join()
+
+        elif len(real_list) == 3:
+            sample1_ps = Process(target=sample1, args=(real_list[0][0], real_list[0][1], real_list[0][2]))
+            sample2_ps = Process(target=sample2, args=(real_list[1][0], real_list[1][1], real_list[1][2]))
+            sample3_ps = Process(target=sample3, args=(real_list[2][0], real_list[2][1], real_list[2][2]))
+            sample1_ps.start()
+            sample2_ps.start()
+            sample3_ps.start()
+            sample1_ps.join()
+            sample2_ps.join()
+            sample3_ps.join()
+
+        else:
+            print("too many or not found")
+            pass
+
